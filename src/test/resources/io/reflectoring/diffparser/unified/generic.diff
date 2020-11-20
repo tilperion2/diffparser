@@ -1,0 +1,25 @@
+--- /dev/null
++++ //depot/SomeClass.java
+@@ -0,0 +1,12 @@
++package com.package.someClass;
++
++//Some comment
++public class SomeClass
++{
++
++	public SomeClass()
++	{
++		int i=0;
++       i++;
++	}
++}
+--- //depot/SomeOtherClass.java	(revision 2)
++++ /depot/SomeOtherClass.java
+@@ -21,7 +21,6 @@
+ import static com.someStaticMethod;
+ import static com.otherStaticMethod.*;
+
+-@RemovedAnnotation
+ @OtherAnnotation
+ public class SomeOtherClass
+ {

@@ -15,10 +15,11 @@
  */
 package io.reflectoring.diffparser.unified;
 
-import static io.reflectoring.diffparser.api.UnifiedDiffParser.LINE_RANGE_PATTERN;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static io.reflectoring.diffparser.api.UnifiedDiffParser.HEADER_START_PATTERN;
+import static io.reflectoring.diffparser.api.UnifiedDiffParser.LINE_RANGE_PATTERN;
 
 /**
  * State machine for a parser parsing a unified diff.
@@ -133,15 +134,19 @@ public enum ParserState {
         @Override
         public ParserState nextState(ParseWindow window) {
             String line = window.getFocusLine();
-            if (matchesFromLinePattern(line)) {
+            if (matchesWholeDiffHeader(window,1)) {
+                window.addLine(1, "");
+                logTransition(line, FROM_LINE, END);
+                return END;
+            } else if (matchesEndPattern(line, window)) {
+                logTransition(line, FROM_LINE, END);
+                return END;
+            } else if (matchesFromLinePattern(line)) {
                 logTransition(line, FROM_LINE, FROM_LINE);
                 return FROM_LINE;
             } else if (matchesToLinePattern(line)) {
                 logTransition(line, FROM_LINE, TO_LINE);
                 return TO_LINE;
-            } else if (matchesEndPattern(line, window)) {
-                logTransition(line, FROM_LINE, END);
-                return END;
             } else if (matchesHunkStartPattern(line)) {
                 logTransition(line, FROM_LINE, HUNK_START);
                 return HUNK_START;
@@ -163,15 +168,19 @@ public enum ParserState {
         @Override
         public ParserState nextState(ParseWindow window) {
             String line = window.getFocusLine();
-            if (matchesFromLinePattern(line)) {
+            if (matchesWholeDiffHeader(window,1)) {
+                window.addLine(1, "");
+                logTransition(line, TO_LINE, END);
+                return END;
+            } else if (matchesEndPattern(line, window)) {
+                logTransition(line, TO_LINE, END);
+                return END;
+            } else if (matchesFromLinePattern(line)) {
                 logTransition(line, TO_LINE, FROM_LINE);
                 return FROM_LINE;
             } else if (matchesToLinePattern(line)) {
                 logTransition(line, TO_LINE, TO_LINE);
                 return TO_LINE;
-            } else if (matchesEndPattern(line, window)) {
-                logTransition(line, TO_LINE, END);
-                return END;
             } else if (matchesHunkStartPattern(line)) {
                 logTransition(line, TO_LINE, HUNK_START);
                 return HUNK_START;
@@ -217,8 +226,17 @@ public enum ParserState {
         @Override
         public ParserState nextState(ParseWindow window) {
             String line = window.getFocusLine();
-            logTransition(line, END, INITIAL);
-            return INITIAL;
+
+            if (matchesHeaderStartPattern(line)) {
+                logTransition(line, END, HEADER);
+                return HEADER;
+            } else if (matchesFromFilePattern(line)) {
+                logTransition(line, END, FROM_FILE);
+                return FROM_FILE;
+            } else {
+                logTransition(line, END, INITIAL);
+                return INITIAL;
+            }
         }
     };
 
@@ -253,43 +271,94 @@ public enum ParserState {
         return line.startsWith("+");
     }
 
+    protected boolean matchesHeaderStartPattern(String line) {
+        return line != null && HEADER_START_PATTERN.matcher(line).matches();
+    }
+
     protected boolean matchesHunkStartPattern(String line) {
         return LINE_RANGE_PATTERN.matcher(line).matches();
+    }
+
+    /**
+     * Checks if 3 next lines contains diff section header: from-file(---), to-file(+++) and hunk lines(@@...)
+     * @param window
+     * @param startLinePositions
+     * @return
+     */
+    protected boolean matchesWholeDiffHeader(ParseWindow window, int startLinePositions) {
+        String possibleFromFileLine = window.getFutureLine(startLinePositions);
+        String possibleToFileLine = window.getFutureLine(startLinePositions + 1);
+        String possibleHunkStart = window.getFutureLine(startLinePositions + 2);
+
+        return possibleFromFileLine != null && possibleToFileLine != null && possibleHunkStart != null &&
+                matchesFromFilePattern(possibleFromFileLine) && matchesToFilePattern(possibleToFileLine) &&
+                matchesHunkStartPattern(possibleHunkStart);
     }
 
     protected boolean matchesEndPattern(String line, ParseWindow window) {
         if ("".equals(line.trim())) {
             // We have a newline which might be the delimiter between two diffs. It may just be an empty line in the current diff or it
             // may be the delimiter to the next diff. This has to be disambiguated...
-            int i = 1;
-            String futureLine;
-            while ((futureLine = window.getFutureLine(i)) != null) {
-                if (matchesFromFilePattern(futureLine)) {
-                    // We found the start of a new diff without another newline in between. That makes the current line the delimiter
-                    // between this diff and the next.
-                    return true;
-                } else if ("".equals(futureLine.trim())) {
-                    // We found another newline after the current newline without a start of a new diff in between. That makes the
-                    // current line just a newline within the current diff.
-                    return false;
-                } else {
-                    i++;
-                }
-            }
-            // We reached the end of the stream.
-            return true;
+            return checkEmptyEndLine(window);
         } else {
-            // some diff tools like "svn diff" do not put an empty line between two diffs
-            // we add that empty line and call the method again
-            String nextFromFileLine = window.getFutureLine(3);
-            if(nextFromFileLine != null && matchesFromFilePattern(nextFromFileLine)){
-                window.addLine(1, "");
-                return matchesEndPattern(line, window);
-            }else{
-                return false;
+            // some diff tools like "svn diff" or Intellij Idea Diff do not put an empty line between two diffs
+            // so we need to find intentionally next from-to-file+hunk sections and header lines above them
+            // then we add that empty line over headers and call the method again or return result.
+            int i = 1;
+            while (i <= 6) {//assume there no more then  header lins in one diff part(6 - max value for Idea diffs)
+
+                //if there is empty line in next lines to current - then this line is not supposed to be end of section.
+                //Also this will skipp checks if we already added empty line in code section below.
+                String possibleEndLine = window.getFutureLine(i);
+                if (possibleEndLine != null && "".equals(possibleEndLine.trim())) {
+                    return false;
+                }
+
+                if (matchesWholeDiffHeader(window, i)) {
+                    //if we found new diff section, try to find its header start line
+                    return findDiffSectionHeaderFirstLine(line, window, i);
+                }
+                i++;
             }
+            return false;
         }
     }
 
+    private boolean findDiffSectionHeaderFirstLine(String line, ParseWindow window, int startLineNum) {
+        int j = startLineNum - 1;
+        while (j > 0) {
+            String possibleHeaderStartLine = window.getFutureLine(j);
+            if (matchesHeaderStartPattern(possibleHeaderStartLine)) {
+                if (!"".equals(window.getFutureLine(j - 1))) {
+                    window.addLine(j, "");
+                }
+                return matchesEndPattern(line, window);
+            }
+            j--;
+        }
+        //If we didnt find header start line, just place end line before diff from-file(---) header
+        window.addLine(startLineNum, "");
+        return matchesEndPattern(line, window);
+    }
+
+    private boolean checkEmptyEndLine(ParseWindow window) {
+        int i = 1;
+        String futureLine;
+        while ((futureLine = window.getFutureLine(i)) != null) {
+            if (matchesFromFilePattern(futureLine)) {
+                // We found the start of a new diff without another newline in between. That makes the current line the delimiter
+                // between this diff and the next.
+                return true;
+            } else if ("".equals(futureLine.trim())) {
+                // We found another newline after the current newline without a start of a new diff in between. That makes the
+                // current line just a newline within the current diff.
+                return false;
+            } else {
+                i++;
+            }
+        }
+        // We reached the end of the stream.
+        return true;
+    }
 
 }

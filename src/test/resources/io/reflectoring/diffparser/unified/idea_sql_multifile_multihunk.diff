@@ -1,0 +1,42 @@
+Index: sql/script1.sql
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- sql/script1.sql	(revision 1)
++++ sql/script1.sql	(date 123456789)
+@@ -1,7 +1,6 @@
+ -- =========================================================================================================
+ -- Feature: Some description
+ --
+--- @author someAuthor -- removed line with sql comment
+ -- @issue 12345
+ -- some neutral comment line
+Index: sql/script2.sql
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- sql/script2.sql	(revision 1)
++++ sql/script2.sql	(date 123456789)
+@@ -1,11 +1,11 @@
+ -- =========================================================================================================
+ -- Feature 12519: Project Work Back Schedule
+ --
+--- @author someAuthor
+--- @issue 112233 -- removed line with sql comment
+ -- some other comment
+ 
++-- some new comments
++-- in sql file
++
+ -- =========================================================================================================
+ -- Record Customization
+ 
+@@ -22,6 +22,7 @@
+   )
+   AS
+     rowCount PLS_INTEGER;
++        -- added multihunk comment in another place
+   BEGIN
+     -- some neutral line comment

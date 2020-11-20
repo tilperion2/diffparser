@@ -1,0 +1,28 @@
+Index: sql/script.sql
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- sql/script.sql	(revision 1)
++++ sql/script.sql	(date 1605134621825)
+@@ -1,11 +1,11 @@
+ -- =========================================================================================================
+ -- Some comment
+ --
+--- @author someAuthor -- removed line with sql comment
+--- @issue 1234 -- removed line with sql comment
+ -- some sql comment line
+ 
++-- some new comments
++-- in sql file
++
+ -- =========================================================================================================
+ -- Record Customization
+ 
+@@ -22,6 +22,7 @@
+   )
+   AS
+     rowCount PLS_INTEGER;
++        -- added multihunk comment in another place
+   BEGIN
+     -- some neutral line comment

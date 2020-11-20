@@ -52,7 +52,10 @@ import java.util.regex.Pattern;
  * Note that the TAB character and date after the file names are not being parsed but instead cut off.
  */
 public class UnifiedDiffParser implements DiffParser {
-    public static final Pattern LINE_RANGE_PATTERN = Pattern.compile("^.*-([0-9]+)(?:,([0-9]+))? \\+([0-9]+)(?:,([0-9]+))?.*$");
+    public static final Pattern LINE_RANGE_PATTERN = Pattern.compile("^@@.*-([0-9]+)(?:,([0-9]+))? \\+([0-9]+)(?:,([0-9]+))?.*@@.*$");
+
+    //Different patterns for heared start lines for Intellij Idea+SVN, Git diff and Tortoise.
+    public static final Pattern HEADER_START_PATTERN = Pattern.compile("^((Index: )|(diff --git)|(Modified: )).*$");
 
     @Override
     public List<Diff> parse(InputStream in) {
@@ -161,7 +164,6 @@ public class UnifiedDiffParser implements DiffParser {
         currentDiff.getHeaderLines().add(currentLine);
     }
 
-
     @Override
     public List<Diff> parse(byte[] bytes) {
         return parse(new ByteArrayInputStream(bytes));
@@ -169,11 +171,8 @@ public class UnifiedDiffParser implements DiffParser {
 
     @Override
     public List<Diff> parse(File file) throws IOException {
-        FileInputStream in = new FileInputStream(file);
-        try{
+        try(FileInputStream in = new FileInputStream(file)) {
           return parse(in);
-        } finally {
-          in.close();
         }
     }
 

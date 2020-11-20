@@ -1,0 +1,22 @@
+Index: database/sql.sql
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- database/sql.sql	(revision 1)
++++ database/sql.sql	(date 123456789)
+@@ -1,11 +1,11 @@
+ -- =========================================================================================================
+ -- Feature 1: Project Init
+ --
+-  SELECT * FROM SOME_TABLE -- removed line with valid select steatement
+--- @author someAuthor -- valid removed comment line from sql file
+--- @issue 1234 -- valid removed comment line from sql file
+ -- @idempotent
+
++  SELECT * FROM NEW_TABLE
++-- some new comments -- valid added comment line from sql file
++-- in sql file -- valid added comment line from sql file
++
+ -- =========================================================================================================
+ -- Record Customization
