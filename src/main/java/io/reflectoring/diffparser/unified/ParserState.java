@@ -1,17 +1,17 @@
 /**
- *    Copyright 2013-2015 Tom Hombergs (tom.hombergs@gmail.com | http://wickedsource.org)
- *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
+ * Copyright 2013-2015 Tom Hombergs (tom.hombergs@gmail.com | http://wickedsource.org)
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package io.reflectoring.diffparser.unified;
 
@@ -76,7 +76,7 @@ public enum ParserState {
                 logTransition(line, FROM_FILE, TO_FILE);
                 return TO_FILE;
             } else {
-                throw new IllegalStateException("A FROM_FILE line ('---') must be directly followed by a TO_FILE line ('+++')!");
+                throw new IllegalStateException(String.format("A FROM_FILE line ('---') must be directly followed by a TO_FILE line ('+++')! Line: %s", line));
             }
         }
     },
@@ -94,8 +94,15 @@ public enum ParserState {
             if (matchesHunkStartPattern(line)) {
                 logTransition(line, TO_FILE, HUNK_START);
                 return HUNK_START;
+            } else if (matchesEndPattern(line, window)) {
+                logTransition(line, TO_FILE, END);
+                return END;
+            } else if (matchesHeaderStartPattern(line)) {
+                window.addLine(0, "");
+                logTransition(line, TO_FILE, END);
+                return END;
             } else {
-                throw new IllegalStateException("A TO_FILE line ('+++') must be directly followed by a HUNK_START line ('@@')!");
+                throw new IllegalStateException(String.format("A TO_FILE line ('+++') must be directly followed by a HUNK_START line ('@@')! Line: %s", line));
             }
         }
     },
@@ -134,7 +141,7 @@ public enum ParserState {
         @Override
         public ParserState nextState(ParseWindow window) {
             String line = window.getFocusLine();
-            if (matchesWholeDiffHeader(window,1)) {
+            if (matchesWholeDiffHeader(window, 1)) {
                 window.addLine(1, "");
                 logTransition(line, FROM_LINE, END);
                 return END;
@@ -168,7 +175,7 @@ public enum ParserState {
         @Override
         public ParserState nextState(ParseWindow window) {
             String line = window.getFocusLine();
-            if (matchesWholeDiffHeader(window,1)) {
+            if (matchesWholeDiffHeader(window, 1)) {
                 window.addLine(1, "");
                 logTransition(line, TO_LINE, END);
                 return END;
@@ -314,7 +321,12 @@ public enum ParserState {
                     return false;
                 }
 
-                if (matchesWholeDiffHeader(window, i)) {
+                if (matchesHeaderStartPattern(possibleEndLine)) {
+                    //if we found new header line of know format - insert empty line before header and we will
+                    //process it on next iterations
+                    window.addLine(i, "");
+                    return false;
+                } else if (matchesWholeDiffHeader(window, i)) {
                     //if we found new diff section, try to find its header start line
                     return findDiffSectionHeaderFirstLine(line, window, i);
                 }
@@ -345,10 +357,19 @@ public enum ParserState {
         int i = 1;
         String futureLine;
         while ((futureLine = window.getFutureLine(i)) != null) {
-            if (matchesFromFilePattern(futureLine)) {
-                // We found the start of a new diff without another newline in between. That makes the current line the delimiter
+            if (i==1 && matchesHeaderStartPattern(futureLine)) {
+                // We found the start of a new diff(its header) without another newline in between. That makes the current line the delimiter
                 // between this diff and the next.
                 return true;
+            } else if (i==1 && matchesFromFilePattern(futureLine)) {
+                // We found the start of a new diff without another newline in between. That makes the current line the delimiter
+                // between this diff and the next.
+                String nextLine = window.getFutureLine(i+1);
+                if (nextLine != null && matchesToFilePattern(nextLine)){
+                    return true;
+                } else {
+                    return false;
+                }
             } else if ("".equals(futureLine.trim())) {
                 // We found another newline after the current newline without a start of a new diff in between. That makes the
                 // current line just a newline within the current diff.
@@ -357,8 +378,11 @@ public enum ParserState {
                 i++;
             }
         }
-        // We reached the end of the stream.
-        return true;
+
+        if (i==1)
+            return true;// Next line - we reached the end of the stream.
+        else
+            return false;
     }
 
 }

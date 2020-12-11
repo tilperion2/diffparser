@@ -99,7 +99,6 @@ public class UnifiedDiffParser implements DiffParser {
                     throw new IllegalStateException(String.format("Illegal parser state '%s", state));
             }
         }
-
         return parsedDiffs;
     }
 
