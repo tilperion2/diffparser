@@ -117,4 +117,93 @@ public class IdeaDiffTest {
         //==============================================================================================================
     }
 
+    @Test
+    public void testIdeaDiffNoChangesNoHunk() throws Exception {
+        // given
+        DiffParser parser = new UnifiedDiffParser();
+        InputStream in = getClass().getResourceAsStream("idea_empty_hunk.diff");
+
+        // when
+        List<Diff> diffs = parser.parse(in);
+
+        // then
+        Assert.assertNotNull(diffs);
+        Assert.assertEquals(2, diffs.size());
+
+        //==============================================================================================================
+        Diff diff1 = diffs.get(0);
+        Assert.assertEquals(1, diff1.getHunks().size());
+        Assert.assertEquals(5, diff1.getHeaderLines().size());
+
+        assertEquals("dev/file1.java", diff1.getFromFileName());
+        assertEquals("dev/file1.java", diff1.getToFileName());
+
+        Hunk hunk1_1 = diff1.getHunks().get(0);
+        assertEquals(56, hunk1_1.getFromFileRange().getLineStart());
+        assertEquals(6, hunk1_1.getFromFileRange().getLineCount());
+        assertEquals(56, hunk1_1.getToFileRange().getLineStart());
+        assertEquals(7, hunk1_1.getToFileRange().getLineCount());
+
+        List<Line> lines = hunk1_1.getLines();
+        assertEquals(7, lines.size());
+        assertEquals(Line.LineType.TO, lines.get(3).getLineType());
+        //==============================================================================================================
+
+        Diff diff2 = diffs.get(1);
+        Assert.assertEquals(0, diff2.getHunks().size());
+        Assert.assertEquals(5, diff2.getHeaderLines().size());
+
+        assertEquals("dev/file2.java", diff2.getFromFileName());
+        assertEquals("dev/file2.java", diff2.getToFileName());
+        //==============================================================================================================
+    }
+
+    @Test
+    public void testIdeaDiffTwoFilesNoChangesTwoEmpyNoHunk() throws Exception {
+        // given
+        DiffParser parser = new UnifiedDiffParser();
+        InputStream in = getClass().getResourceAsStream("idea_two_empty_hunks.diff");
+
+        // when
+        List<Diff> diffs = parser.parse(in);
+
+        // then
+        Assert.assertNotNull(diffs);
+        Assert.assertEquals(3, diffs.size());
+
+        //==============================================================================================================
+        Diff diff1 = diffs.get(0);
+        Assert.assertEquals(1, diff1.getHunks().size());
+        Assert.assertEquals(5, diff1.getHeaderLines().size());
+
+        assertEquals("dev/file1.java", diff1.getFromFileName());
+        assertEquals("dev/file1.java", diff1.getToFileName());
+
+        Hunk hunk1_1 = diff1.getHunks().get(0);
+        assertEquals(56, hunk1_1.getFromFileRange().getLineStart());
+        assertEquals(6, hunk1_1.getFromFileRange().getLineCount());
+        assertEquals(56, hunk1_1.getToFileRange().getLineStart());
+        assertEquals(7, hunk1_1.getToFileRange().getLineCount());
+
+        List<Line> lines = hunk1_1.getLines();
+        assertEquals(7, lines.size());
+        assertEquals(Line.LineType.TO, lines.get(3).getLineType());
+        //==============================================================================================================
+
+        Diff diff2 = diffs.get(1);
+        Assert.assertEquals(0, diff2.getHunks().size());
+        Assert.assertEquals(5, diff2.getHeaderLines().size());
+
+        assertEquals("dev/file2.java", diff2.getFromFileName());
+        assertEquals("dev/file2.java", diff2.getToFileName());
+        //==============================================================================================================
+
+        Diff diff3 = diffs.get(2);
+        Assert.assertEquals(0, diff3.getHunks().size());
+        Assert.assertEquals(5, diff3.getHeaderLines().size());
+
+        assertEquals("dev/file3.java", diff3.getFromFileName());
+        assertEquals("dev/file3.java", diff3.getToFileName());
+        //==============================================================================================================
+    }
 }

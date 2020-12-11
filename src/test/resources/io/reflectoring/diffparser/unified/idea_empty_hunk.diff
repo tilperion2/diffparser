@@ -1,0 +1,22 @@
+Index: dev/file1.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- dev/file1.java	(revision 21)
++++ dev/file1.java	(date 1606721489745)
+@@ -56,6 +56,7 @@
+ 		SOME TEXT,
+ 		SOME TEXT 2,
+ 		SOME TEXT 3,
++		SORTABLE,
+
+ 		SOME TEXT 4,
+ 		SOME TEXT 5,
+Index: dev/file2.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- dev/file2.java	(revision 18)
++++ dev/file2.java	(date 1606721490507)

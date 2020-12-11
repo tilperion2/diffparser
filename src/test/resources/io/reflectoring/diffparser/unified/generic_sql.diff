@@ -1,0 +1,109 @@
+--- /database/schema.sql	(revision 1)
++++ /database/schema.sql
+@@ -11,36 +11,42 @@
+ 			tableName => 'tableName',
+ 			columnName => 'columnName',
+ 			columnDataType => 'NUMBER',
+-			notNull => 'T' ); -- Will be validated automatically
++			notNull => 'T' );
+ 
+ 	-- Engine Demand
+ 	pckg.addColumn(
+ 			tableName => 'tableName',
+ 			columnName => 'columnName',
+ 			columnDataType => 'NUMBER',
+-			notNull => 'T' ); -- Will be validated automatically
++			notNull => 'T' );
+ 
+ END;
+ /
+ 
+--- Removed SQL comment line #1.
+--- Removed SQL comment line #2.
+-CREATE OR REPLACE TRIGGER trigger BEFORE INSERT ON Table
+-	FOR EACH ROW
++CREATE OR REPLACE TRIGGER trigger BEFORE INSERT ON Table FOR EACH ROW
+ 	BEGIN
+-		IF disable_triggers THEN
++		IF disable_triggers = 'T' THEN
++			RETURN;
++		ELSIF some('disable_triggers') = 'T' THEN
+ 			RETURN;
+ 		END IF;
+-		:somaVar := somaVarValue;
++
++		IF (:somaVar IS NULL) THEN
++			SELECT next_val('some') INTO :somaVar FROM dual;
++		END IF;
+ 	END;
+ /
+--- /database/schema2.sql	(revision 2)
++++ /database/schema2.sql
+@@ -55,19 +55,19 @@
+ 			tableName => 'tableName',
+ 			columnName => 'columnName',
+ 			columnDataType => 'NUMBER',
+-			notNull => 'T' ); -- Will be validated automatically
++			notNull => 'T' );
+
+ 	-- Engine Demand
+ 	pckg.addColumn(
+ 			tableName => 'tableName',
+ 			columnName => 'columnName',
+ 			columnDataType => 'NUMBER',
+-			notNull => 'T' ); -- Will be validated automatically
++			notNull => 'T' );
+
+ END;
+ /
+@@ -140,34 +140,44 @@
+ 	END;
+ /
+ 
+--- Removed SQL comment line #3.
+--- Removed SQL comment line #4.
+-CREATE OR REPLACE TRIGGER trigger BEFORE INSERT ON Table
+-	FOR EACH ROW
++CREATE OR REPLACE TRIGGER trigger BEFORE INSERT ON Table FOR EACH ROW
+ 	BEGIN
+-		IF disable_triggers THEN
++		IF disable_triggers = 'T' THEN
++			RETURN;
++		ELSIF some('disable_triggers') = 'T' THEN
+ 			RETURN;
+ 		END IF;
+-		:somaVar := somaVarValue;
++
++		IF (:somaVar IS NULL) THEN
++			SELECT next_val('some') INTO :somaVar FROM dual;
++		END IF;
+ 	END;
+ /
+ 
+-CREATE OR REPLACE TRIGGER trigger2 BEFORE INSERT ON Table
+-	FOR EACH ROW
++CREATE OR REPLACE TRIGGER trigger2 BEFORE INSERT ON Table FOR EACH ROW
+ 	BEGIN
+-		IF disable_triggers THEN
++		IF disable_triggers = 'T' THEN
++			RETURN;
++		ELSIF some('disable_triggers') = 'T' THEN
+ 			RETURN;
+ 		END IF;
+-		:somaVar := somaVarValue;
++
++		IF (:somaVar IS NULL) THEN
++			SELECT next_val('some') INTO :somaVar FROM dual;
++		END IF;
+ 	END;
+ /
+--- /database/migrate.xml	(revision 42)
++++ /database/migrate.xml
+@@ -30,6 +30,7 @@
+ 	<migrate><file>1.sql</file></migrate>
+ 	<migrate><file>2.sql</file></migrate>
+ 	<migrate><file>3.sql</file></migrate>
++	<migrate><file>shema1.sql</file></migrate>
+ 	<migrate><file>4.sql</file></migrate>
+ 	<migrate><file>5.sql</file></migrate>
+ 	<migrate><file>6.sql</file></migrate>
